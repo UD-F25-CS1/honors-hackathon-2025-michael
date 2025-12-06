@@ -83,6 +83,8 @@ def index(state: State) -> Page:
                          "Fruit": [],
                          "Dairy": [],
                          "Meat": []}
+    state.returned_unhealthy = False
+    state.returned_overeat = False
     return Page(state,
                 [Header("Nutrition Budgeting Game", 1),
                  "Welcome to the Nutrition Budgeting Game!",
@@ -116,7 +118,7 @@ Button("Return to Home", "index")]
                  
 @route
 def play_game(state: State) -> Page:
-    if state.hunger == 0 or state.unhealthy >= 8 or state.hunger >= 15:
+    if state.hunger <= 0 or state.unhealthy >= 8 or state.hunger >= 15:
         return lose_game(state)
     if state.day == 30:
         return win_game(state)
