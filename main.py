@@ -56,10 +56,19 @@ class State:
     hunger: int #If hunger reaches 0, the player loses the game
     refrigerator: dict[str, int]
     unhealthy: int
+    fridge_time: dict[str, list[int]]
+    returned_unhealthy: bool
+    returned_overeat: bool
 
 @route
 def index(state: State) -> Page:
-    state.budget = 200
+    '''This route returns the "Home Page" of the website and resets values of state fields.
+    Arguments:
+        state (State): current state of the website
+    Returns:
+        Page: The returned page will allow the player to view the rules or begin the game.
+    '''
+    state.budget = 300
     state.day = 1
     state.hunger = 8
     state.refrigerator = {"Sugar/Candy": 0,
@@ -68,6 +77,12 @@ def index(state: State) -> Page:
                           "Fruit": 0,
                           "Dairy": 0,
                           "Meat": 0}
+    state.fridge_time = {"Sugar/Candy": [],
+                         "Carbs": [],
+                         "Vegetable": [],
+                         "Fruit": [],
+                         "Dairy": [],
+                         "Meat": []}
     return Page(state,
                 [Header("Nutrition Budgeting Game", 1),
                  "Welcome to the Nutrition Budgeting Game!",
@@ -101,19 +116,25 @@ Button("Return to Home", "index")]
                  
 @route
 def play_game(state: State) -> Page:
-    if state.hunger == 0 or state.unhealthy >= 8:
+    if state.hunger == 0 or state.unhealthy >= 8 or state.hunger >= 15:
         return lose_game(state)
     if state.day == 30:
         return win_game(state)
-    if state.unhealthy >= 5:
+    if state.unhealthy >= 5 and not state.returned_unhealthy:
+        state.returned_unhealthy = True
         return Page(state,
-                    ['''Danger: You have eaten {state.unhealthy} unhealthy foods. If you eat 8
+                    [f'''Warning: You have eaten {state.unhealthy} unhealthy foods. If you eat 8
 total unhealthy foods, you will lose the game.''',
                      Button("Return to Main Screen", "play_game")])
-    hunger_bar = state.hunger
+    if state.hunger > 10 and not state.returned_overeat:
+        state.returned_overeat = True
+        return Page(state, [f'''Warning: You have eaten too much food. If your hunger bar reaches
+15, you will lose the game.''',
+                     Button("Return to Main Screen", "play_game")])
+    hunger_bar = state.hunger * "🍗"
     content = [float_right(Button("Quit", "index")),
                Header("Player Statistics", 3),
-               Table([[f"Budget: {state.budget}"], [f"Day: {state.day}"], [f"Hunger: {hunger_bar}"]]),
+               Table([[f"Budget: {state.budget}"], [f"Day: {state.day}"], [f"Hunger Bar: {hunger_bar}"]]),
                Header("Actions:", 3),
                Row(Button("Visit Shop", "visit_shop"),
                    Button("View Refrigerator", "view_refrigerator"),
@@ -128,10 +149,11 @@ def visit_shop(state: State) -> Page:
         shop_grid[1].append(Header(str(value), 4))
         shop_grid[2].append(Button("Purchase", "purchase_food", Argument("item", key)))
     content = [float_right(Button("Quit", "index")),
-               Header("Welcome to the Store", 2),
+               Header("Welcome to the Shop!", 2),
                f"Current Balance: {state.budget}",
                Table(shop_grid),
-               Button("Return to Main Screen", "play_game")]
+               Row(Button("Return to Main Screen", "play_game"),
+                   Button("View Refrigerator", "view_refrigerator"))]
     return Page(state, content)
 
 @route
@@ -147,6 +169,7 @@ def purchase_food(state: State, item: str) -> Page:
     if state.budget > price:
         state.budget -= price
         state.refrigerator[item] += 1
+        state.fridge_time[item].append(0)
     else:
         return Page(state, [float_right(Button("Quit", "index")),
                             "Error: You do not have enough money to purchase this item",
@@ -157,21 +180,58 @@ def purchase_food(state: State, item: str) -> Page:
 def advance_day(state: State) -> Page:
     state.day += 1
     state.hunger -= 4
+    for food in state.fridge_time:
+        for list_index in range(0,len(state.fridge_time[food])):
+            state.fridge_time[food][list_index] += 1
+            if state.fridge_time[food][list_index] == 6:
+                return Page("Warning: One of your food items is a day away from expiring",
+                            Button("Return to Main Screen", "play_game"))
+            if state.fridge_time[food][list_index] > 6:
+                state.refrigerator[food] -= 1
+                state.fridge_time[food][list_index], state.fridge_time[food][-1] = [state.fridge_time[food][-1],
+                                                                                    state.fridge_time[food][list_index]]
+                state.fridge_time[food].pop()
+                return Page("Warning: One of your food items expired and was thrown away",
+                            Button("Return to Main Screen", "play_game"))
     return play_game(state)
 
 @route
 def view_refrigerator(state: State) -> Page:
+    if state.hunger == 0 or state.unhealthy >= 8 or state.hunger >= 15:
+        return lose_game(state)
+    if state.day == 30:
+        return win_game(state)
+    if state.unhealthy >= 5 and not state.returned_unhealthy:
+        state.returned_unhealthy = True
+        return Page(state,
+                    [f'''Warning: You have eaten {state.unhealthy} unhealthy foods. If you eat 8
+total unhealthy foods, you will lose the game.''',
+                     Button("Return to Main Screen", "play_game")])
+    if state.hunger > 10 and not state.returned_overeat:
+        state.returned_overeat = True
+        return Page(state, [f'''Warning: You have eaten too much food. If your hunger bar reaches
+15, you will lose the game.''',
+                     Button("Return to Main Screen", "play_game")])
     fridge_grid = [[Header("Item:", 4)],
                    [Header("Quantity:", 4)],
                    [Header("Days before spoiling:", 4)]]
-    for key, value in state.refrigerator.items():
-        fridge_grid[0].append(Header(key, 4))
+    for food, value in state.refrigerator.items():
+        fridge_grid[0].append(Header(food, 4))
         fridge_grid[1].append(Header(str(value), 4))
+        spoiling_time = ""
+        for list_index, time in enumerate(state.fridge_time[food]):
+            spoiling_time += str(7-time)
+            if list_index < len(state.fridge_time[food])-1:
+                spoiling_time += ", "
+        fridge_grid[2].append(Header(spoiling_time, 4))
+    hunger_bar = state.hunger * "🍗"
     return Page(state, [float_right(Button("Quit", "index")),
                         Header("Refrigerator", 2),
+                        Row("Hunger: " + hunger_bar),
                         Table(fridge_grid),
-                        Button("Return to Main Screen", "play_game"),
-                        Button("Feed Player", "make_recipe")])
+                        Row(Button("Return to Main Screen", "play_game"),
+                            Button("Visit Shop", "visit_shop"),
+                            Button("Feed Player", "make_recipe"))])
 
 @route
 def make_recipe(state: State) -> Page:
@@ -186,37 +246,60 @@ def make_recipe(state: State) -> Page:
     for key, value in recipes.items():
         recipe_grid[0].append(Header(key, 4))
         for num in range(1,7):
-            recipe_grid[num].append(str(value[num-1]))
+            recipe_grid[num].append(Header(str(value[num-1]), 4))
         recipe_grid[7].append(Button("Feed Player", "feed_player", Argument("item", key)))
+    hunger_bar = state.hunger * "🍗"
     return Page(state, [float_right(Button("Quit", "index")),
-                        Header("Welcome to the Store", 2),
+                        Header("Recipes:", 2),
+                        Row("Hunger: " + hunger_bar),
                         f"Current Balance: {state.budget}",
                         Table(recipe_grid),
-                        Button("Return to Main Screen", "play_game")])
+                        Row(Button("Return to Main Screen", "play_game"),
+                            Button("Visit Shop", "visit_shop"),
+                            Button("View Refrigerator", "view_refrigerator"))])
 
 @route
 def feed_player(state: State, item: str) -> Page:
     if item == "Cake" or item == "Candy":
-        unhealthy += 1
+        state.unhealthy += 1
     food_used = recipes[item]
     food_items = []
     for key in prices:
         food_items.append(key)
-    for index, quantity in enumerate(food_used):
-        state.refrigerator[food_items[index]] -= quantity
+    for list_index, quantity in enumerate(food_used):
+        if state.refrigerator[food_items[list_index]] >= quantity:
+            state.refrigerator[food_items[list_index]] -= quantity
+        else:
+            return Page(state, ["Error: You do not have enough of the required food items for this recipe",
+                                Row(Button("Return to Main Screen", "play_game"),
+                                Button("Visit Shop", "visit_shop"),
+                                Button("View Refrigerator", "view_refrigerator"))])
     state.hunger += recipe_value[item]
-    return play_game(state)
+    return view_refrigerator(state)
 
 @route
 def lose_game(state: State) -> Page:
+    '''This route is called when the player's hunger reaches 0 or the player eats
+    8 unhealthy foods
+    Arguments:
+        state (State): current state of the website
+    Returns:
+        Page: defeat page of the website, with a button linking back to the index route
+    '''
     return Page(state, [f"You lost after {state.day} days!",
                         Button("Return to Home", "index")])
 
 @route
 def win_game(state: State) -> Page:
+    '''This route is called when the player makes it through all 30 simulated days.
+    Arguments:
+        state (State): current state of the website
+    Returns:
+        Page: victory page of the website, with a button linking back to the index route
+    '''
     return Page(state, [f"You won with {state.budget} remaining!",
                         Button("Return to Home", "index")])
 
 set_website_style("tacit")
-start_server(State(0,0,6,{},0))
+start_server(State(0,0,8,{},0,{}, False, False))
 
