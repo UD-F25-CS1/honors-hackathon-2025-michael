@@ -319,6 +319,24 @@ def win_game(state: State) -> Page:
     '''
     return Page(state, [f"You won with {state.budget} remaining!",
                         Button("Return to Home", "index")])
+#Unit Tests
+assert_equal(
+ index(State(budget=0, day=0, hunger=8, refrigerator={}, unhealthy=0, fridge_time={}, returned_unhealthy=False, returned_overeat=False)),
+ Page(state=State(budget=300,
+                 day=1,
+                 hunger=8,
+                 refrigerator={'Carbs': 0, 'Dairy': 0, 'Fruit': 0, 'Meat': 0, 'Sugar/Candy': 0, 'Vegetable': 0},
+                 unhealthy=0,
+                 fridge_time={'Carbs': [], 'Dairy': [], 'Fruit': [], 'Meat': [], 'Sugar/Candy': [], 'Vegetable': []},
+                 returned_unhealthy=False,
+                 returned_overeat=False),
+     content=[Row(Header("Nutrition Budgeting Game", 1)),
+              "Welcome to the Nutrition Budgeting Game!",
+              change_margin(Image("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQErrYSHUS12YzUY3Pg3fOFQ7iwaWlNUrOZEg&s"), "0px"),
+              Row("Please view the rules by clicking the button below."),
+              Row(Button("How To Play", "view_instructions")),
+              Row("To begin the game, please click the button below."),
+              Row(Button("Begin Game", "play_game"))]))
 
 set_website_style("tacit")
 start_server(State(0,0,8,{},0,{}, False, False))
