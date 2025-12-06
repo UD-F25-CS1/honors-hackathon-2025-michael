@@ -8,10 +8,9 @@ set_website_title("Nutrition Budgeting Game")
 set_site_information(
     "Michael Guarino",
     """
-This website is an educational game in which the player receives a randomly generated
-amount of money and has to use that money to feed their player for 30 days. This game
-is designed to teach players how to eat a nutritious diet while also teaching them
-how to budget. 
+This website is an educational game in which the player receives $300 and has to 
+use that money to feed their player for 30 days. This game is designed to teach 
+players how to eat a nutritious diet while also teaching them how to budget. 
 """,
     [],
     [],
