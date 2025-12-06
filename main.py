@@ -79,24 +79,36 @@ def play_game(state: State) -> Page:
                Header("Player Statistics", 3),
                Table([[f"Budget: {state.budget}"], [f"Day: {state.day}"], [f"Hunger: {hunger_bar}"]]),
                Header("Actions:", 3),
-               Row(Button("Visit Store", "visit_store"), Button("Proceed", "advance_day"),
+               Row(Button("Visit Shop", "visit_shop"), Button("Proceed", "advance_day"),
                    Button("View Refrigerator", "view_refrigerator"))]
     return Page(state, content)
 
 @route
-def visit_store(state: State) -> Page:
-    shop_grid = [[Header("Item:", 4) ],[Header("Price:", 4)],[""]]
+def visit_shop(state: State) -> Page:
+    shop_grid = [[Header("Item:", 4)],[Header("Price:", 4)],[""]]
     for key, value in prices.items():
         shop_grid[0].append(Header(key, 4))
         shop_grid[1].append(Header(str(value), 4))
-        shop_grid[2].append(Button("Purchase", "purchase_food"))
+        shop_grid[2].append(Button("Purchase", "purchase_food", Argument("item", key)))
     content = [Header("Welcome to the Store", 2),
-               Table(shop_grid)]
+               f"Current Balance: {state.budget}",
+               Table(shop_grid),
+               Button("Return to Main Screen", play_game)]
     return Page(state, content)
 
 @route
-def purchase_food(state: State) -> Page:
-    pass
+def purchase_food(state: State, item: str) -> Page:
+    price = prices[item]
+    if state.budget > price:
+        state.budget -= price
+        if item in state.refrigerator:
+            state.refrigerator[item] += 1
+        else:
+            state.refrigerator[item] = 1
+    else:
+        return Page(state, ["Error: You do not have enough money to purchase this item",
+                            Button("Return to Shop", visit_shop)])
+    return visit_shop(state)
 
 @route
 def advance_day(state: State) -> Page:
