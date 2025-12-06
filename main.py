@@ -95,6 +95,12 @@ def index(state: State) -> Page:
 
 @route
 def view_instructions(state: State) -> Page:
+    '''Returns a page showing the game instructions
+    Arguments:
+        state (State): current state of the website
+    Returns:
+        Page: page showing the game instructions
+    '''  
     content = [Header("Game Instructions", 1),
                '''Welcome to the Nutrition Budgeting Game where your goal is to use your allotted
 budget to feed your player over the course of 30 days''', 
@@ -117,6 +123,14 @@ Button("Return to Home", "index")]
                  
 @route
 def play_game(state: State) -> Page:
+    '''This route produces the main page of the game after the player has begun
+    Arguments: 
+        state (State): current state of the website
+    Returns: 
+        Page: page displaying different messages to the user depending on their actions
+              Primary page shows the player statistics and buttons that link to other pages
+              of the website
+    '''
     if state.hunger <= 0 or state.unhealthy >= 8 or state.hunger >= 15:
         return lose_game(state)
     if state.day == 30:
