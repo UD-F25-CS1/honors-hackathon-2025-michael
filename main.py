@@ -267,8 +267,13 @@ def feed_player(state: State, item: str) -> Page:
     for key in prices:
         food_items.append(key)
     for list_index, quantity in enumerate(food_used):
-        if state.refrigerator[food_items[list_index]] >= quantity:
-            state.refrigerator[food_items[list_index]] -= quantity
+        food = food_items[list_index]
+        if state.refrigerator[food] >= quantity:
+            state.refrigerator[food] -= quantity
+            for num in range(0, quantity):
+                state.fridge_time[food][0], state.fridge_time[food][-1] = [state.fridge_time[food][-1],
+                                                                           state.fridge_time[food][0]]
+                state.fridge_time[food].pop()
         else:
             return Page(state, ["Error: You do not have enough of the required food items for this recipe",
                                 Row(Button("Return to Main Screen", "play_game"),
@@ -302,4 +307,3 @@ def win_game(state: State) -> Page:
 
 set_website_style("tacit")
 start_server(State(0,0,8,{},0,{}, False, False))
-
