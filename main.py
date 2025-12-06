@@ -86,26 +86,26 @@ def index(state: State) -> Page:
     state.returned_unhealthy = False
     state.returned_overeat = False
     return Page(state,
-                [Header("Nutrition Budgeting Game", 1),
+                [Row(Header("Nutrition Budgeting Game", 1)),
                  "Welcome to the Nutrition Budgeting Game!",
-                 "Please view the rules by clicking the button below",
-                 Button("How To Play", "view_instructions"),
-                 "To begin the game, please click the button below",
-                 Button("Begin Game", "play_game")])
+                 change_margin(Image("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQErrYSHUS12YzUY3Pg3fOFQ7iwaWlNUrOZEg&s"), "0px"),
+                 Row("Please view the rules by clicking the button below."),
+                 Row(Button("How To Play", "view_instructions")),
+                 Row("To begin the game, please click the button below."),
+                 Row(Button("Begin Game", "play_game"))])
 
 @route
 def view_instructions(state: State) -> Page:
     content = [Header("Game Instructions", 1),
                '''Welcome to the Nutrition Budgeting Game where your goal is to use your allotted
 budget to feed your player over the course of 30 days''', 
-''' - When you begin the game, you will receive a randomly generated amount of money as your budget
- for the 30 days.''', 
+" - When you begin the game, you will receive $300 as your budget for the 30 days.", 
 ''' - Your player statistics, including hunger level, will be listed at the top of the website.
  If your hunger level reaches 0, you will lose the game. Hunger progresses each day.''', 
-''' - Your player must also make sure to eat a healthy diet. Eating an unhealthy diet will incur score
- penalties and in-game penalties, like sickness.''', 
+''' - Your player must also make sure to eat a healthy diet. Eating an unhealthy diet will cause
+you to lose the game.''', 
 " - You will be able to progress through each day by clicking the 'Proceed' button.", 
-" - To purchase foods, you must visit the store.", 
+" - To purchase foods, you must visit the shop.", 
 ''' - When you purchase foods, they go into your refrigerator. Items in your refrigerator will go bad
  after 7 days and need to be thrown out.''', 
 " - Your refrigerator also can only hold up to 15 items at a time.", 
@@ -309,3 +309,4 @@ def win_game(state: State) -> Page:
 
 set_website_style("tacit")
 start_server(State(0,0,8,{},0,{}, False, False))
+
